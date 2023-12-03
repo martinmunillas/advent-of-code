@@ -2,6 +2,95 @@ use core::panic;
 use std::{convert::TryInto, fmt::Display};
 
 fn main() {
+    println!("Result: A {}", engine_schematic());
+    println!("Result: B {}", gear_ratios());
+}
+
+fn gear_ratios() -> i32 {
+    let input = include_str!("input.txt");
+    let lines: Vec<&str> = input.lines().collect();
+
+    let mut result = 0;
+    for (i, line) in lines.iter().enumerate() {
+        for (j, c) in line.chars().enumerate() {
+            if c != '*' {
+                continue;
+            }
+            let mut max_start = j;
+            if j > 0 {
+                max_start -= 1;
+            }
+            let mut min_end = j;
+            if min_end < line.len() - 1 {
+                min_end += 1;
+            }
+            let mut numbers: Vec<i32> = vec![];
+            if i > 0 {
+                let top = find_numbers_substring(lines[i - 1], max_start, min_end);
+                substring_to_numbers(top)
+                    .iter()
+                    .for_each(|v| numbers.push(*v));
+            }
+
+            let middle = find_numbers_substring(lines[i], max_start, min_end);
+            substring_to_numbers(middle)
+                .iter()
+                .for_each(|v| numbers.push(*v));
+            if i < lines.len() - 1 {
+                let bottom = find_numbers_substring(lines[i + 1], max_start, min_end);
+                substring_to_numbers(bottom)
+                    .iter()
+                    .for_each(|v| numbers.push(*v));
+            }
+
+            if numbers.len() == 2 {
+                result += numbers[0] * numbers[1];
+            }
+        }
+    }
+
+    result
+}
+
+fn find_numbers_substring(line: &str, max_start: usize, min_end: usize) -> &str {
+    let mut idx_start = max_start;
+    while match nth(line, idx_start).to_digit(10) {
+        Some(_) => true,
+        None => false,
+    } {
+        if idx_start == 0 {
+            break;
+        }
+        idx_start -= 1;
+    }
+
+    let mut idx_end = min_end;
+    while match nth(line, idx_end).to_digit(10) {
+        Some(_) => true,
+        None => false,
+    } {
+        idx_end += 1;
+        if idx_end >= line.len() {
+            break;
+        }
+    }
+
+    &line[idx_start..idx_end]
+}
+
+fn substring_to_numbers(line: &str) -> Vec<i32> {
+    let mut result: Vec<i32> = vec![];
+
+    line.split(|c| c == '*' || c == '.')
+        .filter(|s| s.len() > 0)
+        .for_each(|s| match s.parse::<i32>() {
+            Ok(v) => result.push(v),
+            Err(_) => {}
+        });
+    result
+}
+
+fn engine_schematic() -> i32 {
     let input = include_str!("input.txt");
     let lines: Vec<&str> = input.lines().collect();
     let symbols = "!@#$%^&*()-+=[]{}|\\/:;'\"<>?,~_`";
@@ -63,7 +152,6 @@ fn main() {
                         if has_symbol {
                             match current.parse::<i32>() {
                                 Ok(v) => {
-                                    // println!("Found: {}", v);
                                     result += v;
                                 }
                                 Err(_) => {}
@@ -76,7 +164,7 @@ fn main() {
             }
         }
     }
-    println!("Result: {}", result);
+    result
 }
 
 fn nth<T>(input: &str, n: T) -> char
