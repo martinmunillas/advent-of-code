@@ -41,13 +41,11 @@ fn main() {
 
 fn lowest_location_from_locations(seeds: &Vec<i64>, maps: &Vec<Vec<Vec<i64>>>) -> i64 {
     let mut min_location = 0;
-    let mut seed_found = false;
-    while !seed_found {
-        seed_found = location_has_seeds(min_location, seeds, &maps);
-        if !seed_found {
-            min_location += 1;
-        } else {
+    loop {
+        if location_has_seeds(min_location, seeds, &maps) {
             break;
+        } else {
+            min_location += 1;
         }
     }
 
