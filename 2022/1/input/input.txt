@@ -1,8 +1,4 @@
-import { getTop3CaloriesAddedUp } from ".";
-
-console.log(
-  getTop3CaloriesAddedUp(
-    `6529
+6529
 8085
 4534
 1503
@@ -2252,6 +2248,4 @@ console.log(
 9077
 6889
 7045
-8717`
-  )
-);
+8717
