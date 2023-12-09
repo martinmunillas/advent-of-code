@@ -7,7 +7,33 @@ const getCharPoints = (char: string) => {
   }
 };
 
-export const getPrioritiesPoints = (input: string): number => {
+export const getPrioritiesPointsPartA = (input: string): number => {
+  let points = 0;
+  let currentLine = "";
+  i: for (let i = 0; i <= input.length; i++) {
+    const char = input[i];
+    if (char === "\n" || i === input.length) {
+      let repeated = "";
+      let isInFirstHalf: Record<string, boolean> = {};
+      j: for (let j = 0; j < currentLine.length; j++) {
+        if (j < currentLine.length / 2) {
+          isInFirstHalf[currentLine[j]] = true;
+        } else if (isInFirstHalf[currentLine[j]]) {
+          repeated = currentLine[j];
+          break j;
+        }
+      }
+      currentLine = "";
+      points += getCharPoints(repeated);
+      continue i;
+    }
+    currentLine += char;
+  }
+
+  return points;
+};
+
+export const getPrioritiesPointsPartB = (input: string): number => {
   let points = 0;
   let currentLine = "";
   let currentGroup = [];
