@@ -16,14 +16,6 @@ const RIGHT_CHARS: &[char] = &['-', '7', 'J'];
 const UP_CHARS: &[char] = &['|', 'F', '7'];
 const DOWN_CHARS: &[char] = &['|', 'L', 'J'];
 
-fn is_same_line(a: char, b: char) -> bool {
-    match a {
-        'J' => b == 'F',
-        '7' => b == 'L',
-        _ => false,
-    }
-}
-
 fn is_continuing_same_line(x: usize, line: &Vec<char>) -> bool {
     if x == 0 {
         return false;
@@ -37,7 +29,11 @@ fn is_continuing_same_line(x: usize, line: &Vec<char>) -> bool {
         previous -= 1;
     }
 
-    return is_same_line(line[x], line[previous]);
+    match line[x] {
+        'J' => line[previous] == 'F',
+        '7' => line[previous] == 'L',
+        _ => false,
+    }
 }
 
 fn tiles_inside(maze: &Vec<Vec<char>>, maze_loop: &Vec<(i32, i32)>) -> i32 {
