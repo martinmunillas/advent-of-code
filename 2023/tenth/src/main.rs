@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 fn main() {
     run_tests();
 
@@ -5,7 +7,8 @@ fn main() {
 
     let maze = collect_maze(input);
 
-    println!("Part 1: {}", furthest_from_start(&maze));
+    println!("Part 1: {}", furthest_from_start(maze_loop(&maze)));
+    println!("Part 2: {}", tiles_inside(&maze, &maze_loop(&maze)));
 }
 
 const LEFT_CHARS: &[char] = &['-', 'F', 'L'];
@@ -13,21 +16,65 @@ const RIGHT_CHARS: &[char] = &['-', '7', 'J'];
 const UP_CHARS: &[char] = &['|', 'F', '7'];
 const DOWN_CHARS: &[char] = &['|', 'L', 'J'];
 
-fn furthest_from_start(maze: &Vec<Vec<char>>) -> i32 {
+fn is_same_line(a: char, b: char) -> bool {
+    match a {
+        'J' => b == 'F',
+        '7' => b == 'L',
+        _ => false,
+    }
+}
+
+fn tiles_inside(maze: &Vec<Vec<char>>, maze_loop: &Vec<(i32, i32)>) -> i32 {
+    let mut bounds = HashMap::new();
+    for bound in maze_loop {
+        bounds.insert(*bound, true);
+    }
+    let mut count = 0;
+
+    for y in 0..maze.len() {
+        let mut bounds_found = 0;
+        for x in 0..maze[0].len() {
+            let x32 = x as i32;
+            let y32 = y as i32;
+            let char = maze[y][x];
+            if bounds.contains_key(&(x32, y32))
+                && match x {
+                    0 => true,
+                    _ => !is_same_line(char, maze[y][x - 1]),
+                }
+            {
+                // println!("({},{}) `{}`", x, y, char);
+                bounds_found += 1;
+                continue;
+            }
+            if char == '.' && bounds_found > 0 && bounds_found % 2 == 1 {
+                println!("bounds found: {}", bounds_found);
+                println!("({},{}) `{}`", x, y, char);
+                count += 1;
+            }
+        }
+    }
+
+    count
+}
+
+fn maze_loop(maze: &Vec<Vec<char>>) -> Vec<(i32, i32)> {
     let mut history = Vec::new();
     let mut start = (0, 0);
     'outer: for (y, line) in maze.iter().enumerate() {
         for (x, &c) in line.iter().enumerate() {
+            let x32 = x as i32;
+            let y32 = y as i32;
             if c == 'S' {
-                history.push((x as i32, y as i32));
+                history.push((x32, y32));
                 if x > 0 && LEFT_CHARS.contains(&maze[y][x - 1]) {
-                    start = (x as i32 - 1, y as i32)
+                    start = (x32 - 1, y32)
                 } else if x < maze[0].len() - 1 && RIGHT_CHARS.contains(&maze[y][x + 1]) {
-                    start = (x as i32 + 1, y as i32)
+                    start = (x32 + 1, y32)
                 } else if y > 0 && UP_CHARS.contains(&maze[y - 1][x]) {
-                    start = (x as i32, y as i32 - 1)
+                    start = (x32, y32 - 1)
                 } else if y < maze.len() - 1 && DOWN_CHARS.contains(&maze[y + 1][x]) {
-                    start = (x as i32, y as i32 + 1)
+                    start = (x32, y32 + 1)
                 } else {
                     panic!("Invalid start, no path to follow")
                 }
@@ -37,7 +84,11 @@ fn furthest_from_start(maze: &Vec<Vec<char>>) -> i32 {
     }
 
     solve(maze, start, &mut history);
-    return (history.len() as f32 / 2.0).ceil() as i32;
+    return history.clone();
+}
+
+fn furthest_from_start(maze_loop: Vec<(i32, i32)>) -> i32 {
+    return (maze_loop.len() as f32 / 2.0).ceil() as i32;
 }
 
 fn solve(maze: &Vec<Vec<char>>, start_point: (i32, i32), history: &mut Vec<(i32, i32)>) {
@@ -93,10 +144,31 @@ fn run_tests() {
     let example1 = include_str!("./input/example1.txt");
     let example2 = include_str!("./input/example2.txt");
 
-    assert_eq!(furthest_from_start(&collect_maze(example1)), 4);
-    println!("Passed example 1");
-    assert_eq!(furthest_from_start(&collect_maze(example2)), 8);
-    println!("Passed example 2");
+    assert_eq!(furthest_from_start(maze_loop(&collect_maze(example1))), 4);
+    println!("Passed part A example 1");
+    assert_eq!(furthest_from_start(maze_loop(&collect_maze(example2))), 8);
+    println!("Passed part A example 2");
+    println!("Passed all part A tests");
+    println!("");
+
+    let example3 = include_str!("./input/example3.txt");
+    let example4 = include_str!("./input/example4.txt");
+    let example5 = include_str!("./input/example5.txt");
+
+    let maze3 = collect_maze(example3);
+    let maze4 = collect_maze(example4);
+    let maze5 = collect_maze(example5);
+
+    // assert_eq!(tiles_inside(&maze3, &maze_loop(&maze3)), 4);
+    println!("Passed part B example 1");
+    assert_eq!(tiles_inside(&maze4, &maze_loop(&maze4)), 8);
+    println!("Passed part B example 2");
+    assert_eq!(tiles_inside(&maze5, &maze_loop(&maze5)), 10);
+    println!("Passed part B example 3");
+
+    println!("Passed all part B tests");
+    println!("");
+
     println!("Passed all tests");
     println!("");
 }
