@@ -50,12 +50,7 @@ fn tiles_inside(maze: &Vec<Vec<char>>, maze_loop: &Vec<(i32, i32)>) -> i32 {
             let y32 = y as i32;
             let char = maze[y][x];
             if bounds.contains_key(&(x32, y32)) {
-                if char != '-'
-                    && match x {
-                        0 => true,
-                        _ => !is_continuing_same_line(x, &maze[y]),
-                    }
-                {
+                if char != '-' && !is_continuing_same_line(x, &maze[y]) {
                     bounds_found += 1;
                 }
             } else if bounds_found > 0 && bounds_found % 2 == 1 {
