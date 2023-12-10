@@ -46,14 +46,12 @@ fn tiles_inside(maze: &Vec<Vec<char>>, maze_loop: &Vec<(i32, i32)>) -> i32 {
     for y in 0..maze.len() {
         let mut bounds_found = 0;
         for x in 0..maze[0].len() {
-            let x32 = x as i32;
-            let y32 = y as i32;
             let char = maze[y][x];
-            if bounds.contains_key(&(x32, y32)) {
+            if bounds.contains_key(&(x as i32, y as i32)) {
                 if char != '-' && !is_continuing_same_line(x, &maze[y]) {
                     bounds_found += 1;
                 }
-            } else if bounds_found > 0 && bounds_found % 2 == 1 {
+            } else if bounds_found % 2 == 1 {
                 count += 1;
             }
         }
