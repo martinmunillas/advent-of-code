@@ -7,8 +7,8 @@ fn main() {
 
     let maze = collect_maze(input);
 
-    println!("Part 1: {}", furthest_from_start(maze_loop(&maze)));
-    println!("Part 2: {}", tiles_inside(&maze, &maze_loop(&maze)));
+    println!("Result 1: {}", furthest_from_start(maze_loop(&maze)));
+    println!("Result 2: {}", tiles_inside(&maze, &maze_loop(&maze)));
 }
 
 const LEFT_CHARS: &[char] = &['-', 'F', 'L'];
@@ -24,6 +24,22 @@ fn is_same_line(a: char, b: char) -> bool {
     }
 }
 
+fn is_continuing_same_line(x: usize, line: &Vec<char>) -> bool {
+    if x == 0 {
+        return false;
+    }
+
+    let mut previous = x - 1;
+    while line[previous] == '-' {
+        if x == 0 {
+            return false;
+        }
+        previous -= 1;
+    }
+
+    return is_same_line(line[x], line[previous]);
+}
+
 fn tiles_inside(maze: &Vec<Vec<char>>, maze_loop: &Vec<(i32, i32)>) -> i32 {
     let mut bounds = HashMap::new();
     for bound in maze_loop {
@@ -37,19 +53,16 @@ fn tiles_inside(maze: &Vec<Vec<char>>, maze_loop: &Vec<(i32, i32)>) -> i32 {
             let x32 = x as i32;
             let y32 = y as i32;
             let char = maze[y][x];
-            if bounds.contains_key(&(x32, y32))
-                && match x {
-                    0 => true,
-                    _ => !is_same_line(char, maze[y][x - 1]),
+            if bounds.contains_key(&(x32, y32)) {
+                if char != '-'
+                    && match x {
+                        0 => true,
+                        _ => !is_continuing_same_line(x, &maze[y]),
+                    }
+                {
+                    bounds_found += 1;
                 }
-            {
-                // println!("({},{}) `{}`", x, y, char);
-                bounds_found += 1;
-                continue;
-            }
-            if char == '.' && bounds_found > 0 && bounds_found % 2 == 1 {
-                println!("bounds found: {}", bounds_found);
-                println!("({},{}) `{}`", x, y, char);
+            } else if bounds_found > 0 && bounds_found % 2 == 1 {
                 count += 1;
             }
         }
@@ -159,7 +172,7 @@ fn run_tests() {
     let maze4 = collect_maze(example4);
     let maze5 = collect_maze(example5);
 
-    // assert_eq!(tiles_inside(&maze3, &maze_loop(&maze3)), 4);
+    assert_eq!(tiles_inside(&maze3, &maze_loop(&maze3)), 4);
     println!("Passed part B example 1");
     assert_eq!(tiles_inside(&maze4, &maze_loop(&maze4)), 8);
     println!("Passed part B example 2");
