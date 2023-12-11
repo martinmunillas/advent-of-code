@@ -46,8 +46,8 @@ fn sum_galaxy_distances(universe: &Vec<Vec<char>>, expansion_rate: i64) -> i64 {
 
     let mut sum = 0;
 
-    for (i, a) in galaxies[0..=galaxies.len() - 1].iter().enumerate() {
-        for b in galaxies[i..galaxies.len()].iter() {
+    for (i, a) in galaxies.iter().enumerate() {
+        for b in galaxies[(i + 1)..galaxies.len()].iter() {
             let real_a = (a.0 as i64 + x_offsets[a.0], a.1 as i64 + y_offsets[a.1]);
             let real_b = (b.0 as i64 + x_offsets[b.0], b.1 as i64 + y_offsets[b.1]);
 
