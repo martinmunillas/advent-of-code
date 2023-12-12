@@ -1,92 +1,89 @@
+use std::collections::HashMap;
+
 fn main() {
     run_tests();
 
     let input = include_str!("./input/input.txt");
-    println!("Result 1: {}", sum_possible_spring_conditions(input));
+    println!("Result A: {}", sum_possible_spring_conditions(input, 1));
+    println!("Result B: {}", sum_possible_spring_conditions(input, 5));
 }
 
-fn sum_possible_spring_conditions(damaged_records: &str) -> i32 {
+fn sum_possible_spring_conditions(damaged_records: &str, folding_times: usize) -> i32 {
     let mut sum = 0;
     for damaged_record in damaged_records.lines() {
         let chunks = damaged_record.split(" ").collect::<Vec<&str>>();
-        let damaged_record = chunks[0];
-        let groups = chunks[1];
-        sum += record_arrangements(damaged_record, groups);
+        let damaged_record = (vec![chunks[0]]).repeat(folding_times).join("?");
+        let groups = (vec![chunks[1]])
+            .repeat(folding_times)
+            .join(",")
+            .split(",")
+            .map(|x| x.parse::<usize>().unwrap())
+            .collect::<Vec<usize>>();
+        sum += record_arrangements(damaged_record, &groups, &mut HashMap::new());
     }
 
     sum
 }
 
-fn record_arrangements(damaged_record: &str, groups: &str) -> i32 {
-    let mut arrangements = 0;
-    let possible = possible_strs(damaged_record);
-    for record in possible {
-        if str_groups(&record) == groups {
-            arrangements += 1;
+fn record_arrangements(
+    damaged_record: String,
+    groups: &Vec<usize>,
+    memo: &mut HashMap<(String, Vec<usize>), i32>,
+) -> i32 {
+    println!("{} {:?}", damaged_record, groups);
+    // let key = (damaged_record.to_owned(), groups.clone());
+    // if memo.contains_key(&key) {
+    //     return *memo.get(&key).unwrap();
+    // }
+    if damaged_record == "" {
+        return match groups.len() {
+            0 => 1,
+            _ => 0,
+        };
+    }
+    if groups.len() == 0 {
+        if damaged_record.contains("#") {
+            return 0;
         }
+        return 1;
+    }
+    if groups[0] > damaged_record.len() {
+        return 0;
     }
 
-    arrangements
-}
-
-fn possible_strs(damaged_record: &str) -> Vec<String> {
-    let mut unknown = Vec::new();
-    for (i, c) in damaged_record.chars().enumerate() {
-        if c == '?' {
-            unknown.push(i);
-        }
+    let mut result = 0;
+    if damaged_record.starts_with(".") || damaged_record.starts_with("?") {
+        result += record_arrangements(
+            damaged_record[1..damaged_record.len()].to_owned(),
+            groups,
+            memo,
+        );
     }
 
-    let mut possible: Vec<String> = Vec::from(["".to_owned()]);
-    for _ in 0..unknown.len() {
-        possible = possible
-            .iter()
-            .flat_map(|s| {
-                let mut current = Vec::new();
-                for c in ['.', '#'].iter() {
-                    let mut new_s = s.clone();
-                    new_s.push(*c);
-                    current.push(new_s);
-                }
-                current
-            })
-            .collect();
-    }
-    for (i, p) in possible.clone().iter().enumerate() {
-        let mut new = damaged_record.chars().collect::<Vec<char>>();
-        for (j, c) in p.chars().enumerate() {
-            new[unknown[j]] = c;
-        }
-        possible[i] = new.iter().collect();
-    }
-
-    possible
-}
-
-fn str_groups(record: &str) -> String {
-    let mut groups = Vec::new();
-    let mut current = 0;
-    for c in record.chars() {
-        if c == '#' {
-            current += 1;
-        } else {
-            if current > 0 {
-                groups.push(current.to_string());
-                current = 0;
+    if damaged_record.starts_with("#") || damaged_record.starts_with("?") {
+        for i in 1..groups[0] {
+            if damaged_record[i..i].to_owned() == "." {
+                return 0;
             }
         }
-    }
-    if current > 0 {
-        groups.push(current.to_string());
+        result += record_arrangements(
+            damaged_record[groups[0]..damaged_record.len()].to_owned(),
+            &groups[1..groups.len()].to_vec(),
+            memo,
+        )
     }
 
-    groups.join(",")
+    // memo.insert(key, result);
+
+    result
 }
 
 fn run_tests() {
     let example = include_str!("./input/example.txt");
 
-    assert_eq!(sum_possible_spring_conditions(example), 21);
+    assert_eq!(sum_possible_spring_conditions(example, 1), 21);
+    println!("Test passed!");
+    assert_eq!(sum_possible_spring_conditions(example, 5), 525152);
     println!("Test passed!");
 
     println!("");
