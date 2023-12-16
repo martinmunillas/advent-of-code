@@ -1,25 +1,20 @@
-use std::cmp::Ordering;
+use std::collections::HashMap;
 
 fn main() {
     run_tests();
 
-    // let input = include_str!("./input/input.txt");
-    // let rows = collect_rows(input);
-    // println!("Result A: {}", count_tilt_north(&rows));
+    let input = include_str!("./input/input.txt");
+    let rows = collect_rows(input);
+    println!("Result A: {}", count_tilt_north(&rows));
+    println!("Result B: {}", cycle(&rows, 1_000_000_000));
 }
 
 fn count_tilt_north(rows: &Vec<Vec<char>>) -> i32 {
-    let mut y = transpose(rows);
+    let y = transpose(rows);
 
-    y.reverse();
-    print_matrix(&y);
-    apply_gravity(&mut y, false);
-    print_matrix(&y);
+    let tilted = apply_gravity(&y, false);
 
-    let support = count_beam_support(&y);
-    y.reverse();
-    let x = transpose(&y);
-    print_matrix(&x);
+    let support = count_beam_support(&tilted);
     support
 }
 
@@ -36,58 +31,74 @@ fn count_beam_support(matrix: &Vec<Vec<char>>) -> i32 {
     result as i32
 }
 
-fn bubble_sort<F>(row: &mut Vec<char>, cmp: F)
-where
-    F: Fn(char, char) -> Ordering,
-{
-    let mut had_mutations = false;
-    for i in 0..row.len() - 1 {
-        if cmp(row[i], row[i + 1]) == Ordering::Greater {
-            let tmp = row[i];
-            row[i] = row[i + 1];
-            row[i + 1] = tmp;
-            had_mutations = true;
-        }
-    }
-    if had_mutations {
-        bubble_sort(row, cmp);
-    }
-}
-
-fn apply_gravity(matrix: &mut Vec<Vec<char>>, negative: bool) {
+fn apply_gravity(matrix: &Vec<Vec<char>>, negative: bool) -> Vec<Vec<char>> {
+    let mut result = Vec::new();
     for row in matrix {
-        bubble_sort(row, |a, b| {
-            if a == '#' || b == '#' {
-                std::cmp::Ordering::Equal
-            } else if a == 'O' {
-                if negative {
-                    std::cmp::Ordering::Less
-                } else {
-                    std::cmp::Ordering::Greater
-                }
-            } else if b == 'O' {
-                if negative {
-                    std::cmp::Ordering::Greater
-                } else {
-                    std::cmp::Ordering::Less
-                }
-            } else {
-                std::cmp::Ordering::Equal
+        let mut groups = Vec::new();
+        let mut current_circles = 0;
+        let mut current_spaces = 0;
+        for (i, c) in row.iter().enumerate() {
+            if *c == 'O' {
+                current_circles += 1;
+            } else if *c == '.' {
+                current_spaces += 1;
             }
-        })
+
+            if *c == '#' || i == row.len() - 1 {
+                let mut group = Vec::new();
+                if groups.len() > 0 {
+                    group.push('#');
+                }
+                if negative {
+                    for _ in 0..current_spaces {
+                        group.push('.');
+                    }
+                    for _ in 0..current_circles {
+                        group.push('O');
+                    }
+                } else {
+                    for _ in 0..current_circles {
+                        group.push('O');
+                    }
+                    for _ in 0..current_spaces {
+                        group.push('.');
+                    }
+                }
+                if *c == '#' && i == row.len() - 1 {
+                    group.push('#');
+                }
+                groups.push(group);
+                current_circles = 0;
+                current_spaces = 0;
+            }
+        }
+        result.push(groups.concat());
     }
+    result
 }
 
-fn cycle(rows: &Vec<Vec<char>>) -> Vec<Vec<char>> {
-    let mut x = transpose(rows);
-    apply_gravity(&mut x, false);
-    let mut y = transpose(&x);
-    apply_gravity(&mut y, false);
-    let mut x = transpose(&y);
-    apply_gravity(&mut x, true);
-    let mut y = transpose(&x);
-    apply_gravity(&mut y, true);
-    y
+fn cycle(rows: &Vec<Vec<char>>, iterations: i32) -> i32 {
+    let mut map = rows.clone();
+    let mut seen = HashMap::new();
+    let mut at: Vec<Vec<Vec<char>>> = Vec::new();
+    for i in 0..iterations {
+        for j in 0..4 {
+            map = transpose(&map);
+            map = apply_gravity(&map, j % 2 == 1);
+        }
+        if seen.contains_key(&map) {
+            let previous = seen.get(&map).unwrap();
+            let iterations_equivalent =
+                ((iterations - previous - 1) % (i + 1 - previous)) + previous - 2;
+            let equivalent = &at[iterations_equivalent as usize];
+
+            return count_beam_support(&transpose(equivalent));
+        }
+        seen.insert(map.clone(), i);
+        at.push(map.clone());
+    }
+
+    0
 }
 
 fn transpose(matrix: &Vec<Vec<char>>) -> Vec<Vec<char>> {
@@ -101,14 +112,7 @@ fn transpose(matrix: &Vec<Vec<char>>) -> Vec<Vec<char>> {
         }
         result.push(row);
     }
-    result
-}
-
-fn tilt_cycles(rows: &Vec<Vec<char>>, cycles: usize) -> Vec<Vec<char>> {
-    let mut result = rows.clone();
-    for _ in 0..cycles {
-        result = cycle(&result);
-    }
+    result.reverse();
     result
 }
 
@@ -116,24 +120,12 @@ fn collect_rows(input: &str) -> Vec<Vec<char>> {
     input.lines().map(|l| l.chars().collect()).collect()
 }
 
-fn print_matrix(matrix: &Vec<Vec<char>>) {
-    for row in matrix {
-        for c in row {
-            print!("{}", c);
-        }
-        println!("");
-    }
-    println!("");
-}
-
 fn run_tests() {
-    let example = include_str!("./input/example.txt");
+    let example = collect_rows(include_str!("./input/example.txt"));
 
-    let mut a  = vec![".......O......#...OO.#...O#..#.#..O...........OO.O.#O...#O#.....#.#....##.O.#...##..#O......#.O.#.O.".chars().collect::<Vec<char>>()];
-    apply_gravity(&mut a, true);
-    print_matrix(&a);
-
-    assert_eq!(count_tilt_north(&collect_rows(example)), 136);
+    assert_eq!(count_tilt_north(&example), 136);
+    println!("Test passed!");
+    assert_eq!(cycle(&example, 1_000_000), 64);
     println!("Test passed!");
 
     println!("");
