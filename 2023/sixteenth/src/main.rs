@@ -1,10 +1,14 @@
-use std::collections::HashSet;
+use std::{cmp, collections::HashSet};
 
 fn main() {
     run_tests();
 
     let input = include_str!("./input/input.txt");
-    println!("Part 1: {}", count_energized(input));
+    println!(
+        "Result A: {}",
+        count_energized(input, (0, 0), Direction::Right)
+    );
+    println!("Result B: {}", find_most_energized(input));
 }
 
 #[derive(Hash, Eq, PartialEq, Clone, Copy)]
@@ -82,14 +86,14 @@ fn explore(
     }
 }
 
-fn count_energized(map: &str) -> i32 {
+fn count_energized(map: &str, from: (usize, usize), direction: Direction) -> i32 {
     let mut visited = HashSet::new();
     let mut active = HashSet::new();
 
     explore(
         &map.lines().map(|l| l.chars().collect()).collect(),
-        (0, 0),
-        Direction::Right,
+        from,
+        direction,
         &mut visited,
     );
 
@@ -98,6 +102,32 @@ fn count_energized(map: &str) -> i32 {
     }
 
     active.len() as i32
+}
+
+fn find_most_energized(map: &str) -> i32 {
+    let m: Vec<Vec<char>> = map.lines().map(|l| l.chars().collect()).collect();
+
+    let mut most = 0;
+
+    let line_length = m[0].len();
+
+    for i in 0..m.len() {
+        most = cmp::max(most, count_energized(map, (0, i), Direction::Right));
+        most = cmp::max(
+            most,
+            count_energized(map, (line_length - 1, i), Direction::Left),
+        );
+    }
+
+    for i in 0..line_length {
+        most = cmp::max(most, count_energized(map, (i, 0), Direction::Down));
+        most = cmp::max(
+            most,
+            count_energized(map, (i, m.len() - 1), Direction::Left),
+        );
+    }
+
+    most
 }
 
 fn print_map(
@@ -128,8 +158,10 @@ fn print_map(
 fn run_tests() {
     let example = include_str!("./input/example.txt");
 
-    assert_eq!(count_energized(example), 46);
+    assert_eq!(count_energized(example, (0, 0), Direction::Right), 46);
     println!("Test 1 passed!");
+    assert_eq!(find_most_energized(example), 51);
+    println!("Test 2 passed!");
 
     println!("");
     println!("All tests passed!");
