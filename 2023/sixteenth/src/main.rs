@@ -130,31 +130,6 @@ fn find_most_energized(map: &str) -> i32 {
     most
 }
 
-fn print_map(
-    map: &Vec<Vec<char>>,
-    current: (usize, usize),
-    visited: &HashSet<(usize, usize, Direction)>,
-) {
-    let (x, y) = current;
-    let mut map = map.clone();
-    map[y][x] = 'X';
-    for (y, line) in map.iter().enumerate() {
-        for (x, ch) in line.iter().enumerate() {
-            if visited.contains(&(x, y, Direction::Up))
-                || visited.contains(&(x, y, Direction::Down))
-                || visited.contains(&(x, y, Direction::Left))
-                || visited.contains(&(x, y, Direction::Right))
-            {
-                print!("#");
-            } else {
-                print!("{}", ch);
-            }
-        }
-        println!("");
-    }
-    println!("");
-}
-
 fn run_tests() {
     let example = include_str!("./input/example.txt");
 
