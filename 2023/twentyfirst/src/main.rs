@@ -26,14 +26,13 @@ fn visited_after_steps(map: &Vec<Vec<char>>, steps: usize) -> i32 {
     queue.push_back((start.0, start.1, 0));
     while queue.len() > 0 {
         let (x, y, i) = queue.pop_front().unwrap();
-        if map[y][x] == '#' {
+        if map[y][x] == '#' || seen.contains(&(x, y)) {
             continue;
-        }
-        if seen.contains(&(x, y)) {
-            continue;
+        } else if i > steps {
+            break;
         }
         seen.insert((x, y));
-        if i <= steps && i % 2 == odd {
+        if i % 2 == odd {
             answer.insert((x, y));
         }
         if x > 0 {
