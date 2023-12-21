@@ -20,36 +20,38 @@ fn visited_after_steps(map: &Vec<Vec<char>>, steps: usize) -> i32 {
     }
 
     let mut queue = VecDeque::new();
-    let mut current = HashSet::new();
-    queue.push_back(start);
-    for i in 0..=steps {
-        let mut next_queue = VecDeque::new();
-        current = HashSet::new();
-        while queue.len() > 0 {
-            let (x, y) = queue.pop_front().unwrap();
-            if map[y][x] == '#' {
-                continue;
-            } else if i > 0 {
-                current.insert((x, y));
-            }
-            if x > 0 {
-                next_queue.push_back((x - 1, y));
-            }
-            if x < map[y].len() - 1 {
-                next_queue.push_back((x + 1, y));
-            }
-            if y > 0 {
-                next_queue.push_back((x, y - 1));
-            }
-            if y < map.len() - 1 {
-                next_queue.push_back((x, y + 1));
-            }
+    let mut seen = HashSet::new();
+    let mut answer = HashSet::new();
+    let odd = steps % 2;
+    queue.push_back((start.0, start.1, 0));
+    while queue.len() > 0 {
+        let (x, y, i) = queue.pop_front().unwrap();
+        if map[y][x] == '#' {
+            continue;
         }
-        queue = next_queue;
+        if seen.contains(&(x, y)) {
+            continue;
+        }
+        seen.insert((x, y));
+        if i <= steps && i % 2 == odd {
+            answer.insert((x, y));
+        }
+        if x > 0 {
+            queue.push_back((x - 1, y, i + 1));
+        }
+        if x < map[y].len() - 1 {
+            queue.push_back((x + 1, y, i + 1));
+        }
+        if y > 0 {
+            queue.push_back((x, y - 1, i + 1));
+        }
+        if y < map.len() - 1 {
+            queue.push_back((x, y + 1, i + 1));
+        }
     }
 
-    print_map(map, &current, start);
-    current.len() as i32
+    print_map(map, &answer, start);
+    answer.len() as i32
 }
 
 fn print_map(map: &Vec<Vec<char>>, visited: &HashSet<(usize, usize)>, start: (usize, usize)) {
