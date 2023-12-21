@@ -10,7 +10,7 @@ fn main() {
     println!("Result B: {}", fewest_to_rx(collect_nodes(input)));
 }
 
-fn push_button(nodes: HashMap<String, Node>, times: i32) -> i32 {
+fn push_button(nodes: HashMap<String, Node>, times: i64) -> i64 {
     let mut lows = 0;
     let mut highs = 0;
     let mut state = nodes.clone();
@@ -45,6 +45,7 @@ fn push_button(nodes: HashMap<String, Node>, times: i32) -> i32 {
                         state.insert(
                             name.to_string(),
                             Node {
+                                name: current.name,
                                 operator: current.operator,
                                 flip_flop: !current.flip_flop,
                                 conjunction: current.conjunction,
@@ -75,6 +76,7 @@ fn push_button(nodes: HashMap<String, Node>, times: i32) -> i32 {
                     state.insert(
                         name.to_string(),
                         Node {
+                            name: current.name,
                             operator: current.operator,
                             flip_flop: current.flip_flop,
                             conjunction: conjunction,
@@ -89,17 +91,39 @@ fn push_button(nodes: HashMap<String, Node>, times: i32) -> i32 {
     lows * highs
 }
 
-fn fewest_to_rx(nodes: HashMap<String, Node>) -> i32 {
+fn fewest_to_rx(nodes: HashMap<String, Node>) -> i64 {
     let mut state = nodes.clone();
     let mut i = 0;
-    loop {
+    let rx_conjunction = nodes
+        .values()
+        .find(|n| n.next.contains(&"rx".to_owned()))
+        .unwrap();
+    let to_rx_conjunction = nodes
+        .values()
+        .filter(|n| n.next.contains(&rx_conjunction.name))
+        .map(|n| n.name.clone())
+        .collect::<Vec<String>>();
+
+    let mut loops = HashMap::new();
+    'loo: loop {
         i += 1;
         let mut queue = VecDeque::new();
         queue.push_back(("button".to_owned(), false, "broadcaster".to_owned()));
         while queue.len() > 0 {
             let (from, high, name) = queue.pop_front().unwrap();
-            if name == "rx" && !high {
-                return i;
+            if to_rx_conjunction.contains(&name) && !high {
+                loops.insert(name.clone(), i);
+            }
+
+            let mut finished = true;
+            for name in &to_rx_conjunction {
+                if !loops.contains_key(name) {
+                    finished = false;
+                    break;
+                }
+            }
+            if finished {
+                break 'loo;
             }
             let current = state.get(&name);
             if current.is_none() {
@@ -120,6 +144,7 @@ fn fewest_to_rx(nodes: HashMap<String, Node>) -> i32 {
                         state.insert(
                             name.to_string(),
                             Node {
+                                name: current.name,
                                 operator: current.operator,
                                 flip_flop: !current.flip_flop,
                                 conjunction: current.conjunction,
@@ -150,6 +175,7 @@ fn fewest_to_rx(nodes: HashMap<String, Node>) -> i32 {
                     state.insert(
                         name.to_string(),
                         Node {
+                            name,
                             operator: current.operator,
                             flip_flop: current.flip_flop,
                             conjunction: conjunction,
@@ -162,11 +188,16 @@ fn fewest_to_rx(nodes: HashMap<String, Node>) -> i32 {
         }
     }
 
-    return 0;
+    let mut result = 1;
+    for (_, loop_size) in loops {
+        result *= loop_size;
+    }
+    result
 }
 
 #[derive(Debug, Clone)]
 struct Node {
+    name: String,
     operator: Option<char>,
     flip_flop: bool,
     conjunction: HashMap<String, bool>,
@@ -195,6 +226,7 @@ fn collect_nodes(input: &str) -> HashMap<String, Node> {
             .collect::<Vec<String>>();
 
         let node = Node {
+            name: name.to_string(),
             operator: operator,
             flip_flop: false,
             conjunction: HashMap::new(),
