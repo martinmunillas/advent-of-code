@@ -7,6 +7,7 @@ fn main() {
     let input = include_str!("./input/input.txt");
 
     println!("Result A: {}", push_button(collect_nodes(input), 1000));
+    println!("Result B: {}", fewest_to_rx(collect_nodes(input)));
 }
 
 fn push_button(nodes: HashMap<String, Node>, times: i32) -> i32 {
@@ -86,6 +87,82 @@ fn push_button(nodes: HashMap<String, Node>, times: i32) -> i32 {
         }
     }
     lows * highs
+}
+
+fn fewest_to_rx(nodes: HashMap<String, Node>) -> i32 {
+    let mut state = nodes.clone();
+    let mut i = 0;
+    loop {
+        i += 1;
+        let mut queue = VecDeque::new();
+        queue.push_back(("button".to_owned(), false, "broadcaster".to_owned()));
+        while queue.len() > 0 {
+            let (from, high, name) = queue.pop_front().unwrap();
+            if name == "rx" && !high {
+                return i;
+            }
+            let current = state.get(&name);
+            if current.is_none() {
+                continue;
+            }
+            let current = current.unwrap().clone();
+            match current.operator {
+                None => {
+                    for next in current.next {
+                        queue.push_back((name.clone(), high, next))
+                    }
+                }
+                Some('%') => {
+                    if !high {
+                        for next in current.next.clone() {
+                            queue.push_back((name.clone(), !current.flip_flop, next))
+                        }
+                        state.insert(
+                            name.to_string(),
+                            Node {
+                                operator: current.operator,
+                                flip_flop: !current.flip_flop,
+                                conjunction: current.conjunction,
+                                next: current.next,
+                            },
+                        );
+                    }
+                }
+                Some('&') => {
+                    let mut conjunction = current.conjunction.clone();
+                    conjunction.insert(from, high);
+                    let mut to_send = false;
+
+                    for (nn, n) in &nodes {
+                        if n.next.contains(&name) {
+                            match conjunction.get(nn) {
+                                None | Some(false) => {
+                                    to_send = true;
+                                    break;
+                                }
+                                _ => {}
+                            }
+                        }
+                    }
+                    for next in current.next.clone() {
+                        queue.push_back((name.clone(), to_send, next))
+                    }
+                    state.insert(
+                        name.to_string(),
+                        Node {
+                            operator: current.operator,
+                            flip_flop: current.flip_flop,
+                            conjunction: conjunction,
+                            next: current.next.clone(),
+                        },
+                    );
+                }
+                _ => panic!("Unknown operator {}", current.operator.unwrap()),
+            }
+        }
+    }
+
+    return 0;
 }
 
 #[derive(Debug, Clone)]
