@@ -1,5 +1,5 @@
 use core::panic;
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 
 fn main() {
     run_tests();
@@ -14,73 +14,85 @@ fn push_button(nodes: HashMap<String, Node>, times: i32) -> i32 {
     let mut highs = 0;
     let mut state = nodes.clone();
     for _ in 0..times {
-        let (a, b, new_state) = exec(&mut state.clone(), "broadcaster", true);
-        lows += a;
-        highs += b;
-        state = new_state;
+        let mut queue = VecDeque::new();
+        queue.push_back(("button".to_owned(), false, "broadcaster".to_owned()));
+        while queue.len() > 0 {
+            let (from, high, name) = queue.pop_front().unwrap();
+
+            if high {
+                highs += 1;
+            } else {
+                lows += 1;
+            };
+
+            let current = state.get(&name);
+            if current.is_none() {
+                continue;
+            }
+            let current = current.unwrap().clone();
+            match current.operator {
+                None => {
+                    for next in current.next {
+                        queue.push_back((name.clone(), high, next))
+                    }
+                }
+                Some('%') => {
+                    if !high {
+                        for next in current.next.clone() {
+                            queue.push_back((name.clone(), !current.flip_flop, next))
+                        }
+                        state.insert(
+                            name.to_string(),
+                            Node {
+                                operator: current.operator,
+                                flip_flop: !current.flip_flop,
+                                conjunction: current.conjunction,
+                                next: current.next,
+                            },
+                        );
+                    }
+                }
+                Some('&') => {
+                    let mut conjunction = current.conjunction.clone();
+                    conjunction.insert(from, high);
+                    let mut to_send = false;
+
+                    for (nn, n) in &nodes {
+                        if n.next.contains(&name) {
+                            match conjunction.get(nn) {
+                                None | Some(false) => {
+                                    to_send = true;
+                                    break;
+                                }
+                                _ => {}
+                            }
+                        }
+                    }
+                    for next in current.next.clone() {
+                        queue.push_back((name.clone(), to_send, next))
+                    }
+                    state.insert(
+                        name.to_string(),
+                        Node {
+                            operator: current.operator,
+                            flip_flop: current.flip_flop,
+                            conjunction: conjunction,
+                            next: current.next.clone(),
+                        },
+                    );
+                }
+                _ => panic!("Unknown operator {}", current.operator.unwrap()),
+            }
+        }
     }
     lows * highs
-}
-
-fn exec(
-    state: &mut HashMap<String, Node>,
-    name: &str,
-    low: bool,
-) -> (i32, i32, HashMap<String, Node>) {
-    println!("{} {}", name, low);
-    let current = state[name].clone();
-    let mut lows = 0;
-    let mut highs = 0;
-    match current.operator {
-        None => {
-            for next in current.next {
-                let (a, b, _) = exec(state, &next, true);
-                lows += a;
-                highs += b;
-            }
-        }
-        Some('%') => {
-            if low {
-                for next in current.next.clone() {
-                    let (a, b, _) = exec(state, &next, !current.state);
-                    lows += a;
-                    highs += b;
-                }
-                state.insert(
-                    name.to_string(),
-                    Node {
-                        operator: current.operator,
-                        state: !current.state,
-                        next: current.next,
-                    },
-                );
-            }
-        }
-        Some('&') => {
-            for next in current.next.clone() {
-                let (a, b, _) = exec(state, &next, low);
-                lows += a;
-                highs += b;
-            }
-            state.insert(
-                name.to_string(),
-                Node {
-                    operator: current.operator,
-                    state: low,
-                    next: current.next.clone(),
-                },
-            );
-        }
-        _ => panic!("Unknown operator {}", current.operator.unwrap()),
-    }
-
-    (lows, highs, state.clone())
 }
 
 #[derive(Debug, Clone)]
 struct Node {
     operator: Option<char>,
-    state: bool,
+    flip_flop: bool,
+    conjunction: HashMap<String, bool>,
     next: Vec<String>,
 }
 
@@ -89,11 +101,15 @@ fn collect_nodes(input: &str) -> HashMap<String, Node> {
 
     for line in input.lines() {
         let chunks = line.split(" -> ").collect::<Vec<&str>>();
-        let mut operator = None;
-        let name = if chunks[0] == "broadcaster" {
-            "broadcaster"
+        let first_char = chunks[0].chars().nth(0).unwrap();
+        let operator = if "%&".contains(first_char) {
+            Some(first_char)
         } else {
-            operator = Some(chunks[0].chars().nth(0).unwrap());
+            None
+        };
+        let name = if operator.is_none() {
+            chunks[0]
+        } else {
             &chunks[0][1..chunks[0].len()]
         };
         let next = chunks[1]
@@ -103,7 +119,8 @@ fn collect_nodes(input: &str) -> HashMap<String, Node> {
 
         let node = Node {
             operator: operator,
-            state: false,
+            flip_flop: false,
+            conjunction: HashMap::new(),
             next: next,
         };
         nodes.insert(name.to_string(), node);
