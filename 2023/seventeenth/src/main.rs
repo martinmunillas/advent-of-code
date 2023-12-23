@@ -1,216 +1,96 @@
-use std::{cmp::min, collections::HashMap};
+use std::collections::{BinaryHeap, HashSet};
 
 fn main() {
     run_tests();
+
+    let input = include_str!("./input/input.txt");
+
+    println!("Result A: {}", find_least_heat(&parse_heatmap(input), 3));
 }
 
-#[derive(Debug)]
-enum Direction {
-    Up,
-    Down,
-    Left,
-    Right,
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+struct Step {
+    heat: i32,
+    position: (i32, i32),
+    direction: (i32, i32),
+    distance: i32,
+}
+impl PartialOrd for Step {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(other.heat.cmp(&self.heat))
+    }
+}
+impl Ord for Step {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        other.heat.cmp(&self.heat)
+    }
 }
 
-const MAX_STRAIGHT_DISTANCE: usize = 3;
+fn find_least_heat(heatmap: &Vec<Vec<i32>>, max_straight_distance: i32) -> i32 {
+    let mut pq = BinaryHeap::new();
+    let mut seen = HashSet::new();
 
-fn find_least_heat(
-    heatmap: &Vec<Vec<i32>>,
-    start: (usize, usize),
-    direction: Option<Direction>,
-    memo: &mut HashMap<(usize, usize), i32>,
-) -> i32 {
-    println!("RECURSION {:?}", start);
-    if start.0 == heatmap[0].len() - 1 && start.1 == heatmap.len() - 1 {
-        println!("END");
-        let last = heatmap[start.1][start.0];
-        memo.insert(start, last);
-        return last;
-    }
-    if start.0 >= heatmap[0].len() - 1 || start.1 >= heatmap.len() - 1 {
-        println!("OUT OF BOUNDS");
-        return i32::MAX;
-    }
-    if memo.contains_key(&start) {
-        println!("IN MEMO");
-        return *memo.get(&start).unwrap();
-    }
+    pq.push(Step {
+        heat: 0,
+        position: (0, 0),
+        direction: (0, 0),
+        distance: 0,
+    });
 
-    memo.insert(start, i32::MAX);
-
-    let mut result = i32::MAX;
-
-    match direction {
-        None => {
-            let mut current = 0;
-            for i in 0..MAX_STRAIGHT_DISTANCE {
-                current += heatmap[start.1][start.0 + i];
-                let right =
-                    find_least_heat(heatmap, (start.0, start.1 + 1), Some(Direction::Down), memo);
-
-                if right < i32::MAX {
-                    result = min(result, right + current)
-                }
-            }
-            current = 0;
-            for i in 0..MAX_STRAIGHT_DISTANCE {
-                current += heatmap[start.1 + i][start.0];
-                let down = find_least_heat(
-                    heatmap,
-                    (start.0 + 1, start.1),
-                    Some(Direction::Right),
-                    memo,
-                );
-
-                if down < i32::MAX {
-                    result = min(result, down + current)
-                }
-            }
+    while pq.len() > 0 {
+        let step = pq.pop().unwrap();
+        if seen.contains(&(step.position, step.direction, step.distance)) {
+            continue;
         }
-        Some(Direction::Down) => {
-            let mut current = 0;
-            for i in 0..MAX_STRAIGHT_DISTANCE {
-                if start.1 + i == heatmap.len() - 1 && start.0 == heatmap[0].len() - 1 {
-                    println!("END down");
-                    return heatmap[start.1][start.0];
-                }
-                if start.1 + i >= heatmap.len() {
-                    break;
-                }
-                current += heatmap[start.1 + i][start.0];
-                if start.0 < heatmap[0].len() - 1 {
-                    let right = find_least_heat(
-                        heatmap,
-                        (start.0 + 1, start.1 + i),
-                        Some(Direction::Right),
-                        memo,
-                    );
+        seen.insert((step.position, step.direction, step.distance));
 
-                    if right < i32::MAX {
-                        result = min(result, right + current);
-                    }
-                }
-                if start.0 > 0 {
-                    let left = find_least_heat(
-                        heatmap,
-                        (start.0 - 1, start.1 + i),
-                        Some(Direction::Left),
-                        memo,
-                    );
-
-                    if left < i32::MAX {
-                        result = min(result, left + current)
-                    }
-                }
-            }
+        if step.position.0 == heatmap.len() as i32 - 1
+            && step.position.1 == heatmap[0].len() as i32 - 1
+        {
+            return step.heat;
         }
-        Some(Direction::Right) => {
-            let mut current = 0;
-            for i in 0..MAX_STRAIGHT_DISTANCE {
-                if start.1 == heatmap.len() - 1 && start.0 + i == heatmap[0].len() - 1 {
-                    println!("END right");
-                    return heatmap[start.1][start.0];
-                }
-                if start.0 + i >= heatmap[0].len() {
-                    break;
-                }
-                current += heatmap[start.1][start.0 + i];
-                if start.1 < heatmap.len() - 1 {
-                    let down = find_least_heat(
-                        heatmap,
-                        (start.0 + i, start.1 + 1),
-                        Some(Direction::Down),
-                        memo,
-                    );
 
-                    if down < i32::MAX {
-                        result = min(result, down + current);
-                    }
-                }
-                if start.1 > 0 {
-                    let up = find_least_heat(
-                        heatmap,
-                        (start.0 + i, start.1 - 1),
-                        Some(Direction::Up),
-                        memo,
-                    );
-
-                    if up < i32::MAX {
-                        result = min(result, up + current)
-                    }
-                }
+        if step.distance < max_straight_distance && step.direction != (0, 0) {
+            let new = (
+                step.position.0 + step.direction.0,
+                step.position.1 + step.direction.1,
+            );
+            if new.0 < 0
+                || new.1 < 0
+                || new.0 >= heatmap.len() as i32
+                || new.1 >= heatmap[0].len() as i32
+            {
+                continue;
             }
+            pq.push(Step {
+                heat: step.heat + heatmap[new.0 as usize][new.1 as usize],
+                position: new,
+                direction: step.direction,
+                distance: step.distance + 1,
+            });
         }
-        Some(Direction::Up) => {
-            let mut current = 0;
-            for i in 0..MAX_STRAIGHT_DISTANCE {
-                if start.1 < i {
-                    break;
-                }
-                current += heatmap[start.1 - i][start.0];
-                if start.0 < heatmap[0].len() - 1 {
-                    let right = find_least_heat(
-                        heatmap,
-                        (start.0 + 1, start.1 - i),
-                        Some(Direction::Right),
-                        memo,
-                    );
-
-                    if right < i32::MAX {
-                        result = min(result, right + current);
-                    }
-                }
-                if start.0 > 0 {
-                    let left = find_least_heat(
-                        heatmap,
-                        (start.0 - 1, start.1 - i),
-                        Some(Direction::Left),
-                        memo,
-                    );
-
-                    if left < i32::MAX {
-                        result = min(result, left + current)
-                    }
-                }
+        for direction in [(0, 1), (1, 0), (0, -1), (-1, 0)] {
+            if direction == step.direction || direction == (-step.direction.0, -step.direction.1) {
+                continue;
             }
-        }
-        Some(Direction::Left) => {
-            let mut current = 0;
-            for i in 0..MAX_STRAIGHT_DISTANCE {
-                if start.0 < i {
-                    break;
-                }
-                current += heatmap[start.1][start.0 - i];
-                if start.1 < heatmap.len() - 1 {
-                    let down = find_least_heat(
-                        heatmap,
-                        (start.0 - i, start.1 + 1),
-                        Some(Direction::Down),
-                        memo,
-                    );
 
-                    if down < i32::MAX {
-                        result = min(result, down + current);
-                    }
-                }
-                if start.1 > 0 {
-                    let up = find_least_heat(
-                        heatmap,
-                        (start.0 - i, start.1 - 1),
-                        Some(Direction::Up),
-                        memo,
-                    );
-
-                    if up < i32::MAX {
-                        result = min(result, up + current)
-                    }
-                }
+            let new = (step.position.0 + direction.0, step.position.1 + direction.1);
+            if new.0 < 0
+                || new.1 < 0
+                || new.0 >= heatmap.len() as i32
+                || new.1 >= heatmap[0].len() as i32
+            {
+                continue;
             }
+            pq.push(Step {
+                heat: step.heat + heatmap[new.0 as usize][new.1 as usize],
+                position: new,
+                direction: direction,
+                distance: 1,
+            })
         }
     }
-
-    memo.insert(start, result);
-    result
+    0
 }
 
 fn parse_heatmap(input: &str) -> Vec<Vec<i32>> {
@@ -224,32 +104,10 @@ fn parse_heatmap(input: &str) -> Vec<Vec<i32>> {
         .collect()
 }
 
-fn print_accumulated_heatmap(map: &Vec<Vec<i32>>, heatmap: &HashMap<(usize, usize), i32>) {
-    for i in 0..map.len() {
-        for j in 0..map[0].len() {
-            match heatmap.get(&(j, i)) {
-                Some(heat) => {
-                    if heat == &i32::MAX {
-                        print!(" MAX ");
-                    } else {
-                        print!(" {:3} ", heat)
-                    }
-                }
-                None => print!(" --- "),
-            }
-        }
-        println!("");
-    }
-}
-
 fn run_tests() {
     let example = include_str!("./input/example.txt");
 
-    let example_heatmap = parse_heatmap(example);
-    let mut hash = HashMap::new();
-    let test = find_least_heat(&example_heatmap, (0, 0), None, &mut hash);
-    print_accumulated_heatmap(&example_heatmap, &hash);
-    assert_eq!(test, 102);
+    assert_eq!(find_least_heat(&parse_heatmap(example), 3), 102);
     println!("Test passed!");
 
     println!("");
