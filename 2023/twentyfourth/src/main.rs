@@ -22,8 +22,8 @@ fn count_collisions_in_range(hailstones: &Vec<Hailstone>, range: (f64, f64)) -> 
                     && coords.1 >= range.0
                     && coords.1 <= range.1
                     && !is_coord_in_past(*a, coords)
+                    && !is_coord_in_past(*b, coords)
                 {
-                    println!("COLLISION IN AREA: [{:?}+{:?}] -> {:?}", a, b, coords);
                     collisions += 1;
                 }
             }
@@ -37,7 +37,7 @@ fn is_coord_in_past(hailstone: Hailstone, coord: (f64, f64)) -> bool {
     let (cx, _) = coord;
 
     let is_negative = dx < 0.0;
-    let is_past = if is_negative { x > cx } else { x < cx };
+    let is_past = if is_negative { x < cx } else { x > cx };
     is_past
 }
 
