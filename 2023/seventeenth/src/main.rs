@@ -55,19 +55,18 @@ fn find_least_heat(heatmap: &Vec<Vec<i32>>, max_straight_distance: i32) -> i32 {
                 step.position.0 + step.direction.0,
                 step.position.1 + step.direction.1,
             );
-            if new.0 < 0
-                || new.1 < 0
-                || new.0 >= heatmap.len() as i32
-                || new.1 >= heatmap[0].len() as i32
+            if new.0 >= 0
+                && new.1 >= 0
+                && new.0 < heatmap.len() as i32
+                && new.1 < heatmap[0].len() as i32
             {
-                continue;
+                pq.push(Step {
+                    heat: step.heat + heatmap[new.0 as usize][new.1 as usize],
+                    position: new,
+                    direction: step.direction,
+                    distance: step.distance + 1,
+                });
             }
-            pq.push(Step {
-                heat: step.heat + heatmap[new.0 as usize][new.1 as usize],
-                position: new,
-                direction: step.direction,
-                distance: step.distance + 1,
-            });
         }
         for direction in [(0, 1), (1, 0), (0, -1), (-1, 0)] {
             if direction == step.direction || direction == (-step.direction.0, -step.direction.1) {
