@@ -5,7 +5,11 @@ fn main() {
 
     let input = include_str!("./input/input.txt");
 
-    println!("Result A: {}", find_least_heat(&parse_heatmap(input), 3));
+    println!("Result A: {}", find_least_heat(&parse_heatmap(input), 3, 0));
+    println!(
+        "Result B: {}",
+        find_least_heat(&parse_heatmap(input), 10, 4)
+    );
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
@@ -26,7 +30,11 @@ impl Ord for Step {
     }
 }
 
-fn find_least_heat(heatmap: &Vec<Vec<i32>>, max_straight_distance: i32) -> i32 {
+fn find_least_heat(
+    heatmap: &Vec<Vec<i32>>,
+    max_straight_distance: i32,
+    min_straight_distance: i32,
+) -> i32 {
     let mut pq = BinaryHeap::new();
     let mut seen = HashSet::new();
 
@@ -46,6 +54,7 @@ fn find_least_heat(heatmap: &Vec<Vec<i32>>, max_straight_distance: i32) -> i32 {
 
         if step.position.0 == heatmap.len() as i32 - 1
             && step.position.1 == heatmap[0].len() as i32 - 1
+            && step.distance >= min_straight_distance
         {
             return step.heat;
         }
@@ -67,6 +76,9 @@ fn find_least_heat(heatmap: &Vec<Vec<i32>>, max_straight_distance: i32) -> i32 {
                     distance: step.distance + 1,
                 });
             }
+        }
+        if step.distance < min_straight_distance && step.direction != (0, 0) {
+            continue;
         }
         for direction in [(0, 1), (1, 0), (0, -1), (-1, 0)] {
             if direction == step.direction || direction == (-step.direction.0, -step.direction.1) {
@@ -105,8 +117,13 @@ fn parse_heatmap(input: &str) -> Vec<Vec<i32>> {
 
 fn run_tests() {
     let example = include_str!("./input/example.txt");
+    let example2 = include_str!("./input/example2.txt");
 
-    assert_eq!(find_least_heat(&parse_heatmap(example), 3), 102);
+    assert_eq!(find_least_heat(&parse_heatmap(example), 3, 0), 102);
+    println!("Test passed!");
+    assert_eq!(find_least_heat(&parse_heatmap(example), 10, 4), 94);
+    println!("Test passed!");
+    assert_eq!(find_least_heat(&parse_heatmap(example2), 10, 4), 71);
     println!("Test passed!");
 
     println!("");
