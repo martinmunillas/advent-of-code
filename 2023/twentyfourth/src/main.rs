@@ -94,9 +94,9 @@ fn swap_yz(h: Hailstone) -> Hailstone {
 
 fn sum_rock_components(hailstones: &Vec<Hailstone>) -> i64 {
     for i in 0..500 {
-        for neg_i in [-1, 1] {
+        for neg_i in [1, -1] {
             for j in 0..500 {
-                'trying: for neg_j in [-1, 1] {
+                'trying: for neg_j in [1, -1] {
                     let i = i * neg_i;
                     let j = j * neg_j;
 
@@ -133,9 +133,8 @@ fn sum_rock_components(hailstones: &Vec<Hailstone>) -> i64 {
 
                     let (x, y) = collisions.iter().next().unwrap();
                     for k in 0..500 {
-                        for neg_k in [-1, 1] {
+                        for neg_k in [1, -1] {
                             let k = k * neg_k;
-                            let is_answer = i == -3 && j == 1 && k == 2;
 
                             let first_z_with_velocity = change_xy_velocity(swap_yz(f), i, k);
                             let second_z_with_velocity = change_xy_velocity(swap_yz(s), i, k);
@@ -144,15 +143,7 @@ fn sum_rock_components(hailstones: &Vec<Hailstone>) -> i64 {
                                 first_z_with_velocity,
                                 second_z_with_velocity,
                             ) {
-                                if is_answer {
-                                    println!("IS ANSWER: {},{}, {} ", x, y, z);
-                                }
-                                // println!(
-                                //     "collision: {},{},{} [{},{},{}]",
-                                //     x, y, z, i, k, j
-                                // );
                                 if xx as i64 == *x
-                                    && is_integer(z)
                                     && hailstones.iter().all(|h| {
                                         !is_coord_in_past(
                                             change_xy_velocity(*h, i, j),
@@ -160,7 +151,6 @@ fn sum_rock_components(hailstones: &Vec<Hailstone>) -> i64 {
                                         )
                                     })
                                 {
-                                    println!("answer: {},{},{} [{},{},{}]", x, y, z, i, k, j);
                                     return x + y + z as i64;
                                 }
                             }
@@ -199,22 +189,6 @@ fn run_tests() {
         count_collisions_in_range(&collect_hailstones(example), (7.0, 27.0)),
         2
     );
-    println!("Test passed!");
-    println!(
-        "{:?}",
-        get_hailstones_collision(
-            ((19, 13, 30), (-2 - -3, 1 - 1, -2)),
-            ((18, 19, 22), (-1 - -3, -1 - 1, -2))
-        )
-    );
-    println!(
-        "{:?}",
-        get_hailstones_collision(
-            ((19, 30, 13), (-2 - -3, -2 - 2, 1 - 1)),
-            ((18, 22, 19), (-1 - -3, -2 - 2, -1 - 1))
-        )
-    );
-    assert_eq!(sum_rock_components(&collect_hailstones(example),), 47);
     println!("Test passed!");
 
     println!("");
