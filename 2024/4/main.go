@@ -1,7 +1,6 @@
 package main
 
 import (
-	"math"
 	"os"
 	"strings"
 )
@@ -34,38 +33,40 @@ func A(file string) int {
 				result++
 			}
 		}
+		curr = ""
 	}
-	curr = ""
 	for j := 0; j < columns; j++ {
 		for i := 0; i < rows; i++ {
 			if foundXmas(&curr, matrix[i][j]) {
 				result++
 			}
 		}
+		curr = ""
 	}
-	curr = ""
-	for i := 1; i <= (rows + columns - 1); i++ {
-		startCol := int(math.Max(0, float64(i-rows)))
-		count := int(math.Min(math.Min(float64(i), (float64(columns-startCol))), float64(rows)))
-		for j := 0; j < count; j++ {
-			if foundXmas(&curr, matrix[int(math.Min(float64(rows), float64(i)))-j-1][startCol+j]) {
-				result++
+	for sum := 0; sum < rows+columns-1; sum++ {
+		for i := 0; i < rows; i++ {
+			j := sum - i
+			if j >= 0 && j < columns {
+				r, c := i, j
+				if foundXmas(&curr, matrix[r][c]) {
+					result++
+				}
 			}
 		}
-
+		curr = ""
 	}
-	curr = ""
-	for i := 1; i <= (rows + columns - 1); i++ {
-		startCol := int(math.Max(0, float64(i-rows)))
-		count := int(math.Min(math.Min(float64(i), (float64(columns-startCol))), float64(rows)))
-		for j := count - 1; j >= 0; j-- {
-			if foundXmas(&curr, matrix[int(math.Min(float64(rows), float64(i)))-j-1][startCol+j]) {
-				result++
+	for sum := 0; sum < rows+columns-1; sum++ {
+		for i := 0; i < rows; i++ {
+			j := sum - (rows - 1 - i)
+			if j >= 0 && j < columns {
+				r, c := i, j
+				if foundXmas(&curr, matrix[r][c]) {
+					result++
+				}
 			}
 		}
-
+		curr = ""
 	}
-	curr = ""
 	return result
 }
 
