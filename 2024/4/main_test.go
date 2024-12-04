@@ -14,8 +14,8 @@ func TestA(t *testing.T) {
 }
 
 func TestB(t *testing.T) {
-	result := B("example2.txt")
-	if result != 48 {
+	result := B("example.txt")
+	if result != 9 {
 		t.Fatalf("Invalid b example result: %d", result)
 	}
 	fmt.Println(B("input.txt"))

@@ -13,9 +13,11 @@ func foundXmas(str *string, c rune) bool {
 	return *str == "XMAS" || *str == "SAMX"
 }
 
-func A(file string) int {
-	f, _ := os.ReadFile(file)
-	result := 0
+func getMatrix(file string) [][]rune {
+	f, err := os.ReadFile(file)
+	if err != nil {
+		panic(err)
+	}
 	matrix := [][]rune{}
 	for _, line := range strings.Split(string(f), "\n") {
 		row := []rune{}
@@ -24,6 +26,12 @@ func A(file string) int {
 		}
 		matrix = append(matrix, row)
 	}
+	return matrix
+}
+
+func A(file string) int {
+	result := 0
+	matrix := getMatrix(file)
 	rows := len(matrix)
 	columns := len(matrix[0])
 	curr := ""
@@ -72,6 +80,22 @@ func A(file string) int {
 
 func B(file string) int {
 	result := 0
+	matrix := getMatrix(file)
+	for i, row := range matrix {
+		for j, c := range row {
+			if i == 0 || j == 0 || i == len(matrix)-1 || j == len(row)-1 {
+				continue
+			}
+			if c == 'A' {
+				diagA := string([]rune{matrix[i-1][j-1], c, matrix[i+1][j+1]})
+				diagB := string([]rune{matrix[i-1][j+1], c, matrix[i+1][j-1]})
+				if (diagA == "MAS" || diagA == "SAM") && (diagB == "MAS" || diagB == "SAM") {
+					result++
+				}
+
+			}
+		}
+	}
 
 	return result
 }
