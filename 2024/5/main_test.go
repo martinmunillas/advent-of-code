@@ -15,7 +15,7 @@ func TestA(t *testing.T) {
 
 func TestB(t *testing.T) {
 	result := B("example.txt")
-	if result != 9 {
+	if result != 123 {
 		t.Fatalf("Invalid b example result: %d", result)
 	}
 	fmt.Println(B("input.txt"))

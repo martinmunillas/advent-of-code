@@ -44,6 +44,12 @@ func parseOrderings(file string) (map[int][]int, [][]int) {
 			currLine = nil
 		}
 	}
+	n, err := strconv.Atoi(currNumber)
+	if err != nil {
+		panic(err)
+	}
+	currLine = append(currLine, n)
+	currNumber = ""
 	updates = append(updates, currLine)
 	return orderings, updates
 }
@@ -67,6 +73,31 @@ looking:
 
 func B(file string) int {
 	result := 0
+	orderings, updates := parseOrderings(file)
+	for _, update := range updates {
+		isSorted := true
+		for i, n := range update[:len(update)-1] {
+			m := update[i+1]
+			if !slices.Contains(orderings[n], m) {
+				isSorted = false
+				break
+			}
+		}
+		if isSorted {
+			continue
+		}
+
+		slices.SortFunc(update, func(a int, b int) int {
+			isGreater := slices.Contains(orderings[a], b)
+			if isGreater {
+				return -1
+			} else {
+				return 1
+			}
+		})
+
+		result += update[int(float32(len(update)-1)/2+0.6)]
+	}
 
 	return result
 }
