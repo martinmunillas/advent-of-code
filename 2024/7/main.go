@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"strconv"
 )
@@ -65,40 +66,37 @@ func parseOperations(file string) []Operation {
 
 }
 
-func (o Operation) CouldBeValid() bool {
-	if o.add(0, o.Values) {
-		return true
-	}
-	if o.multiply(1, o.Values) {
+func (o Operation) CouldBeValid(withUnionOperator bool) bool {
+	if o.operate("", o.Values, withUnionOperator) {
 		return true
 	}
 	return false
 }
 
-func (o Operation) add(n int, next []int) bool {
+func (o Operation) operate(str string, next []int, withUnionOperator bool) bool {
+	n := 0
+	if str != "" {
+		num, err := strconv.Atoi(str)
+		if err != nil {
+			panic(err)
+		}
+		n = num
+	}
 	if len(next) == 0 {
 		return n == o.Result
 	}
 
-	if o.add(n+next[0], next[1:]) {
+	if o.operate(fmt.Sprintf("%d", n+next[0]), next[1:], withUnionOperator) {
 		return true
 	}
-	if o.multiply(n*next[0], next[1:]) {
+	if str == "" {
+		n = 1
+	}
+	if o.operate(fmt.Sprintf("%d", n*next[0]), next[1:], withUnionOperator) {
 		return true
 	}
 
-	return false
-}
-
-func (o Operation) multiply(n int, next []int) bool {
-	if len(next) == 0 {
-		return n == o.Result
-	}
-
-	if o.add(n+next[0], next[1:]) {
-		return true
-	}
-	if o.multiply(n*next[0], next[1:]) {
+	if withUnionOperator && o.operate(fmt.Sprintf("%s%d", str, next[0]), next[1:], withUnionOperator) {
 		return true
 	}
 
@@ -109,7 +107,7 @@ func A(file string) int {
 	result := 0
 	operations := parseOperations(file)
 	for _, operation := range operations {
-		if operation.CouldBeValid() {
+		if operation.CouldBeValid(false) {
 			result += operation.Result
 		}
 	}
@@ -118,5 +116,11 @@ func A(file string) int {
 
 func B(file string) int {
 	result := 0
+	operations := parseOperations(file)
+	for _, operation := range operations {
+		if operation.CouldBeValid(true) {
+			result += operation.Result
+		}
+	}
 	return result
 }
