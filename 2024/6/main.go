@@ -43,7 +43,7 @@ func printMatrix(matrix [][]rune) {
 	}
 }
 
-func explore(matrix [][]rune, curr image.Point, visited map[image.Point]interface{}) {
+func exploreA(matrix [][]rune, curr image.Point, visited map[image.Point]interface{}) {
 	visited[curr] = true
 	next := curr
 	c := matrix[curr.Y][curr.X]
@@ -70,18 +70,105 @@ func explore(matrix [][]rune, curr image.Point, visited map[image.Point]interfac
 		matrix[next.Y][next.X] = c
 	}
 
-	explore(matrix, next, visited)
+	exploreA(matrix, next, visited)
 }
 
 func A(file string) int {
 	matrix, start := getMap(file)
 	visited := map[image.Point]interface{}{}
-	explore(matrix, start, visited)
+	exploreA(matrix, start, visited)
 	return len(visited)
+}
+
+type Step struct {
+	Point     image.Point
+	Direction rune
+}
+
+func hasLoop(matrix [][]rune, curr image.Point, visited map[Step]interface{}) bool {
+	c := matrix[curr.Y][curr.X]
+	currStep := Step{Point: curr, Direction: c}
+	if _, ok := visited[currStep]; ok {
+		return true
+	} else {
+		visited[currStep] = true
+	}
+	next := curr
+	switch c {
+	case '^':
+		next = next.Add(image.Pt(0, -1))
+	case '>':
+		next = next.Add(image.Pt(1, 0))
+	case '<':
+		next = next.Add(image.Pt(-1, 0))
+	case 'v':
+		next = next.Add(image.Pt(0, 1))
+	default:
+		panic(fmt.Sprintf("invalid character %s", string(c)))
+	}
+	// printMatrix(matrix)
+	if next.Y < 0 || next.Y > len(matrix)-1 || next.X < 0 || next.X > len(matrix[0])-1 {
+		return false
+	}
+	if matrix[next.Y][next.X] == '#' {
+		matrix[curr.Y][curr.X] = turn[c]
+		next = curr
+	} else {
+		matrix[next.Y][next.X] = c
+	}
+
+	return hasLoop(matrix, next, visited)
+}
+
+func copyMap(original map[Step]interface{}) map[Step]interface{} {
+	copiedMap := make(map[Step]interface{})
+	for key, value := range original {
+		copiedMap[key] = value
+	}
+	return copiedMap
 }
 
 func B(file string) int {
 	result := 0
+	matrix, curr := getMap(file)
+	next := curr
+	visited := map[Step]interface{}{}
+	obstacles := map[image.Point]interface{}{}
+	for {
+		c := matrix[curr.Y][curr.X]
+		currStep := Step{Point: curr, Direction: c}
+		visited[currStep] = true
+		switch c {
+		case '^':
+			next = curr.Add(image.Pt(0, -1))
+		case '>':
+			next = curr.Add(image.Pt(1, 0))
+		case '<':
+			next = curr.Add(image.Pt(-1, 0))
+		case 'v':
+			next = curr.Add(image.Pt(0, 1))
+		default:
+			panic(fmt.Sprintf("invalid character %s", string(c)))
+		}
+		if next.Y < 0 || next.Y > len(matrix)-1 || next.X < 0 || next.X > len(matrix[0])-1 {
+			return result
+		}
+		if matrix[next.Y][next.X] == '#' {
+			matrix[curr.Y][curr.X] = turn[c]
+			next = curr
+		} else {
+			if _, ok := obstacles[next]; !ok {
+				obstacles[next] = true
+				matrix[next.Y][next.X] = '#'
+				matrix[curr.Y][curr.X] = turn[c]
+				if hasLoop(matrix, curr, copyMap(visited)) {
+					result += 1
+				}
+				matrix[next.Y][next.X] = '.'
+			}
 
-	return result
+			matrix[next.Y][next.X] = c
+			curr = next
+		}
+	}
 }
