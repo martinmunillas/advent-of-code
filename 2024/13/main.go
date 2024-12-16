@@ -76,19 +76,16 @@ func B(file string) int {
 	games := getGames(file)
 
 	for _, game := range games {
-		aTimes := 0
 		game.Prize.X += 10000000000000
 		game.Prize.Y += 10000000000000
 
-		for {
-			xTimes := float64(game.Prize.X-(aTimes*game.A.X)) / float64(game.B.X)
-			yTimes := float64(game.Prize.Y-(aTimes*game.A.Y)) / float64(game.B.Y)
-			if xTimes == yTimes && isWhole(xTimes) && isWhole(yTimes) {
-				result += int(xTimes) + (3 * aTimes)
-				break
-			}
-			aTimes++
+		// Math learnt from https://www.youtube.com/watch?v=-5J-DAsWuJc&t=767s
+		timesA := float64((game.Prize.X*game.B.Y)-(game.Prize.Y*game.B.X)) / float64((game.A.X*game.B.Y)-(game.A.Y*game.B.X))
+		timesB := (float64(game.Prize.X) - (float64(game.A.X) * timesA)) / float64(game.B.X)
+		if isWhole(timesA) && isWhole(timesB) {
+			result += int(timesA*3 + timesB)
 		}
+
 	}
 
 	return result
