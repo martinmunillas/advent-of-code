@@ -6,12 +6,8 @@ import (
 )
 
 func TestA(t *testing.T) {
-	result := A("example2.txt")
-	if result != 2028 {
-		t.Fatalf("Invalid a example2 result: %d", result)
-	}
-	result = A("example.txt")
-	if result != 10092 {
+	result := A("example.txt")
+	if result != 0 {
 		t.Fatalf("Invalid a example result: %d", result)
 	}
 	fmt.Println(A("input.txt"))
@@ -19,8 +15,8 @@ func TestA(t *testing.T) {
 
 func TestB(t *testing.T) {
 	result := B("example.txt")
-	if result != 9021 {
-		t.Fatalf("Invalid a example result: %d", result)
+	if result != 0 {
+		t.Fatalf("Invalid b example result: %d", result)
 	}
 	fmt.Println(B("input.txt"))
 }
