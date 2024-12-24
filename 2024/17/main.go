@@ -15,6 +15,19 @@ type Program struct {
 	Program []int
 }
 
+func (p Program) combo(operand int) int {
+	if operand == 4 {
+		operand = p.A
+	} else if operand == 5 {
+		operand = p.B
+	} else if operand == 6 {
+		operand = p.C
+	}
+
+	return operand
+
+}
+
 func (p *Program) Execute() (output []int) {
 	index := 0
 
@@ -22,35 +35,27 @@ func (p *Program) Execute() (output []int) {
 		fmt.Println(index)
 		opcode := p.Program[index]
 		operand := p.Program[index+1]
-		if operand == 4 {
-			operand = p.A
-		} else if operand == 5 {
-			operand = p.B
-		} else if operand == 6 {
-			operand = p.C
-		}
 
 		switch opcode {
 		case 0:
-			p.A = int(float64(p.A) / math.Pow(float64(operand), 2))
+			p.A = int(float64(p.A) / math.Pow(2, float64(p.combo(operand))))
 		case 1:
 			p.B = p.B ^ operand
 		case 2:
-			p.B = operand % 8
+			p.B = p.combo(operand) % 8
 		case 3:
-			if p.A == 0 {
+			if p.A != 0 {
+				index = operand
 				continue
 			}
-			index = operand
-			continue
 		case 4:
 			p.B = p.B ^ p.C
 		case 5:
-			output = append(output, operand%8)
+			output = append(output, p.combo(operand)%8)
 		case 6:
-			p.B = int(float64(p.A) / math.Pow(float64(operand), 2))
+			p.B = int(float64(p.A) / math.Pow(2, float64(p.combo(operand))))
 		case 7:
-			p.C = int(float64(p.A) / math.Pow(float64(operand), 2))
+			p.C = int(float64(p.A) / math.Pow(2, float64(p.combo(operand))))
 		}
 		index += 2
 	}
@@ -103,8 +108,15 @@ func parseProgram(file string) Program {
 
 func A(file string) string {
 	program := parseProgram(file)
-	fmt.Print(program.Execute())
-	return ""
+	output := program.Execute()
+	res := ""
+	for i, n := range output {
+		if i != 0 {
+			res += ","
+		}
+		res += fmt.Sprintf("%d", n)
+	}
+	return res
 }
 
 func B(file string) int {
