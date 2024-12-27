@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"image"
 	"os"
+	"slices"
 	"strconv"
 	"strings"
 )
@@ -38,67 +39,112 @@ var directionalCoords = map[rune]image.Point{
 	'>': image.Pt(2, 1),
 }
 
-func fromTo(coords map[rune]image.Point, origin rune, target rune) []rune {
-	diff := coords[target].Sub(coords[origin])
-	xNegative := diff.X < 0
-	yNegative := diff.Y < 0
-	if xNegative {
-		diff.X += -(diff.X * 2)
-	}
-	if yNegative {
-		diff.Y += -(diff.Y * 2)
-	}
-	result := []rune{}
-	for range diff.Y {
-		if yNegative {
-			result = append(result, '^')
-		} else {
-			result = append(result, 'v')
+func solveCode(code string, robots int, memo map[string]int) int {
+	result := 0
+	prev := 'A'
+	for _, curr := range code {
+		instructions := fromTo(numericCoords, prev, curr, image.Pt(0, 3))
+		results := make([]int, 0, len(instructions))
+		for _, instruction := range instructions {
+			results = append(results, directional(instruction, robots, memo))
 		}
+		result += slices.Min(results)
+		prev = curr
 	}
 
-	for range diff.X {
-		if xNegative {
-			result = append(result, '<')
-		} else {
-			result = append(result, '>')
-		}
-	}
-
-	result = append(result, 'A')
 	return result
 }
 
-func compute(coords map[rune]image.Point) func([]rune) []rune {
-	return func(code []rune) (all []rune) {
-		prev := 'A'
-		for _, curr := range code {
-			all = append(all, fromTo(coords, prev, curr)...)
-			prev = curr
-		}
-		return all
+func directional(code string, depth int, memo map[string]int) int {
+	key := code + fmt.Sprint(depth)
+	if v, ok := memo[key]; ok {
+		return v
 	}
+
+	result := 0
+	prev := 'A'
+	for _, curr := range code {
+		instructions := fromTo(directionalCoords, prev, curr, image.Pt(0, 0))
+		results := make([]int, 0, len(instructions))
+		for _, seq := range instructions {
+			if depth == 1 {
+				results = append(results, len(seq))
+			} else {
+				results = append(results, directional(seq, depth-1, memo))
+			}
+		}
+		result += slices.Min(results)
+		prev = curr
+	}
+
+	memo[key] = result
+	return result
 }
 
-var directional = compute(directionalCoords)
-var numeric = compute(numericCoords)
+func fromTo(coords map[rune]image.Point, org, dst rune, avoid image.Point) []string {
+	from := coords[org]
+	to := coords[dst]
+	diff := to.Sub(from)
 
-func A(file string) int {
-	codes := parse(file)
+	xNegative := diff.X < 0
+	yNegative := diff.Y < 0
+	if xNegative {
+		diff.X = -diff.X
+	}
+	if yNegative {
+		diff.Y = -diff.Y
+	}
+
+	x := ""
+	y := ""
+	for range diff.X {
+		if xNegative {
+			x += "<"
+		} else {
+			x += ">"
+		}
+	}
+
+	for range diff.Y {
+		if yNegative {
+			y += "^"
+		} else {
+			y += "v"
+		}
+	}
+
+	var all []string
+	if !(from.Y == avoid.Y && to.X == avoid.X) {
+		all = append(all, x+y+"A")
+	}
+	if !(from.X == avoid.X && to.Y == avoid.Y) {
+		all = append(all, y+x+"A")
+	}
+
+	return all
+}
+
+func solve(codes []string, robots int) int {
+	memo := map[string]int{}
+
 	result := 0
 	for _, code := range codes {
 		numPart, err := strconv.Atoi(code[:3])
 		if err != nil {
 			panic(err)
 		}
-		instructions := directional(directional(numeric([]rune(code))))
-		fmt.Println(string(instructions))
-		fmt.Println(numPart, len(instructions))
-		result += numPart * len(instructions)
+		result += numPart * solveCode(code, robots, memo)
 	}
 	return result
 }
 
+func A(file string) int {
+	codes := parse(file)
+	return solve(codes, 2)
+
+}
+
 func B(file string) int {
-	return 0
+	codes := parse(file)
+	return solve(codes, 25)
 }
