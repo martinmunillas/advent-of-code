@@ -119,6 +119,78 @@ func A(file string) string {
 	return res
 }
 
+func find(program []int, target []int, ans int) int {
+	if len(target) == 0 {
+		return ans
+	}
+
+	for t := 0; t < 8; t++ {
+		a := (ans << 3) | t
+		b, c := 0, 0
+		var output *int
+		adv3 := false
+
+		combo := func(operand int) int {
+			switch operand {
+			case 0, 1, 2, 3:
+				return operand
+			case 4:
+				return a
+			case 5:
+				return b
+			case 6:
+				return c
+			default:
+				panic(fmt.Sprintf("unrecognized combo operand %d", operand))
+			}
+		}
+
+		for pointer := 0; pointer < len(program)-2; pointer += 2 {
+			opcode := program[pointer]
+			operand := program[pointer+1]
+
+			switch opcode {
+			case 0:
+				if adv3 {
+					panic("program has multiple ADVs")
+				}
+				if operand != 3 {
+					panic(fmt.Sprintf("program has ADV with operand %d other than 3", operand))
+				}
+				adv3 = true
+			case 1:
+				b ^= operand
+			case 2:
+				b = combo(operand) % 8
+			case 3:
+				panic("program has JNZ inside expected loop body")
+			case 4:
+				b ^= c
+			case 5:
+				if output != nil {
+					panic("program has multiple OUT")
+				}
+				out := combo(operand) % 8
+				output = &out
+			case 6:
+				b = a >> combo(operand)
+			case 7:
+				c = a >> combo(operand)
+			}
+
+			if output != nil && *output == target[len(target)-1] {
+				sub := find(program, target[:len(target)-1], a)
+				if sub != -1 {
+					return sub
+				}
+			}
+		}
+	}
+
+	return -1
+}
+
 func B(file string) int {
-	return 0
+	program := parseProgram(file)
+	return find(program.Program, program.Program, 0)
 }

@@ -49,5 +49,40 @@ func A(file string) int {
 }
 
 func B(file string) int {
-	return 0
+	seqToTotal := make(map[[4]int]int)
+	nums := parse(file)
+
+	for _, num := range nums {
+
+		buyer := []int{num % 10}
+		for i := 0; i < 2000; i++ {
+			num = next(num)
+			buyer = append(buyer, num%10)
+		}
+
+		seen := make(map[[4]int]struct{})
+		for i := 0; i < len(buyer)-4; i++ {
+			a, b, c, d, e := buyer[i], buyer[i+1], buyer[i+2], buyer[i+3], buyer[i+4]
+			seq := [4]int{b - a, c - b, d - c, e - d}
+
+			if _, found := seen[seq]; found {
+				continue
+			}
+			seen[seq] = struct{}{}
+
+			if _, found := seqToTotal[seq]; !found {
+				seqToTotal[seq] = 0
+			}
+			seqToTotal[seq] += e
+		}
+	}
+
+	maxValue := 0
+	for _, total := range seqToTotal {
+		if total > maxValue {
+			maxValue = total
+		}
+	}
+
+	return maxValue
 }
